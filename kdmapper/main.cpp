@@ -8,6 +8,12 @@ int main(const int argc, char** argv)
 		return -1;
 	}
 
+	if (intel_driver::IsRunning())
+	{
+		std::cout << "[-] \\Device\\Nal is already in use. Check if iqvw64e.sys is already running" << std::endl;
+		return -1;
+	}
+
 	const std::string driver_path = argv[1];
 
 	if (!std::filesystem::exists(driver_path))
