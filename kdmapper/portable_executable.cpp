@@ -21,7 +21,7 @@ portable_executable::vec_relocs portable_executable::GetRelocs(void* image_base)
 
 	while (current_base_relocation->VirtualAddress && current_base_relocation->VirtualAddress < reloc_end && current_base_relocation->SizeOfBlock)
 	{
-		RelocInfo reloc_info;
+		RelocInfo reloc_info{};
 
 		reloc_info.address = reinterpret_cast<uint64_t>(image_base) + current_base_relocation->VirtualAddress;
 		reloc_info.item = reinterpret_cast<uint16_t*>(reinterpret_cast<uint64_t>(current_base_relocation) + sizeof(IMAGE_BASE_RELOCATION));

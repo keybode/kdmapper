@@ -49,7 +49,16 @@ uint64_t kdmapper::MapDriver(HANDLE iqvw64e_device_handle, const std::string& dr
 
 		// Resolve relocs and imports
 
-		RelocateImageByDelta(portable_executable::GetRelocs(local_image_base), kernel_image_base - nt_headers->OptionalHeader.ImageBase);
+		// A missing relocation directory is OK, but disallow IMAGE_FILE_RELOCS_STRIPPED
+		// Not checked: IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE in DllCharacteristics. The DDK/WDK has never set this mostly for historical reasons
+		const portable_executable::vec_relocs& relocs = portable_executable::GetRelocs(local_image_base);
+		if (relocs.empty() && (nt_headers->FileHeader.Characteristics & IMAGE_FILE_RELOCS_STRIPPED) != 0)
+		{
+			std::cout << "[-] Image is not relocatable" << std::endl;
+			break;
+		}
+		
+		RelocateImageByDelta(relocs, kernel_image_base - nt_headers->OptionalHeader.ImageBase);
 
 		if (!ResolveImports(iqvw64e_device_handle, portable_executable::GetImports(local_image_base)))
 		{
@@ -96,7 +105,7 @@ uint64_t kdmapper::MapDriver(HANDLE iqvw64e_device_handle, const std::string& dr
 	return 0;
 }
 
-void kdmapper::RelocateImageByDelta(portable_executable::vec_relocs relocs, const uint64_t delta)
+void kdmapper::RelocateImageByDelta(const portable_executable::vec_relocs& relocs, const uint64_t delta)
 {
 	for (const auto& current_reloc : relocs)
 	{
@@ -111,7 +120,7 @@ void kdmapper::RelocateImageByDelta(portable_executable::vec_relocs relocs, cons
 	}
 }
 
-bool kdmapper::ResolveImports(HANDLE iqvw64e_device_handle, portable_executable::vec_imports imports)
+bool kdmapper::ResolveImports(HANDLE iqvw64e_device_handle, const portable_executable::vec_imports& imports)
 {
 	for (const auto& current_import : imports)
 	{
