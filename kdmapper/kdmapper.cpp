@@ -14,13 +14,7 @@ uint64_t kdmapper::MapDriver(HANDLE iqvw64e_device_handle, const std::string& dr
 
 	if (!nt_headers)
 	{
-		std::cout << "[-] Invalid format of PE image" << std::endl;
-		return 0;
-	}
-
-	if (nt_headers->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC)
-	{
-		std::cout << "[-] Image is not 64 bit" << std::endl;
+		std::cout << "[-] Invalid or non-x64 PE image" << std::endl;
 		return 0;
 	}
 

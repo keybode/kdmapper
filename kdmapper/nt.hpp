@@ -1,11 +1,9 @@
 #pragma once
-#include <Windows.h>
-#include <winternl.h>
-#pragma comment(lib, "ntdll.lib")
+
+#include "ntdll.h"
 
 namespace nt
 {
-	constexpr auto PAGE_SIZE = 0x1000;
 	constexpr auto STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;
 
 	constexpr auto SystemModuleInformation = 11;

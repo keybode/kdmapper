@@ -1,18 +1,10 @@
 #include "portable_executable.hpp"
+#include "ntdll.h"
 
 PIMAGE_NT_HEADERS64 portable_executable::GetNtHeaders(void* image_base)
 {
-	const auto dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(image_base);
-
-	if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
-		return nullptr;
-
-	const auto nt_headers = reinterpret_cast<PIMAGE_NT_HEADERS64>(reinterpret_cast<uint64_t>(image_base) + dos_header->e_lfanew);
-
-	if (nt_headers->Signature != IMAGE_NT_SIGNATURE)
-		return nullptr;
-
-	return nt_headers;
+	const PIMAGE_NT_HEADERS64 headers = RtlImageNtHeader(image_base);
+	return headers != nullptr && headers->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC ? headers : nullptr;
 }
 
 portable_executable::vec_relocs portable_executable::GetRelocs(void* image_base)
