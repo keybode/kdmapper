@@ -38,5 +38,5 @@ int main(const int argc, char** argv)
 	}
 
 	intel_driver::Unload(iqvw64e_device_handle);
-	std::cout << "[+] success" << std::endl;
+	std::cout << "[+] Success" << std::endl;
 }
