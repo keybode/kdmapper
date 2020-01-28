@@ -51,6 +51,10 @@ uint64_t kdmapper::MapDriver(HANDLE iqvw64e_device_handle, const std::string& dr
 			}
 		}
 
+		// Initialize stack cookie if driver was compiled with /GS
+		
+		InitStackCookie(local_image_base);
+
 		// Resolve relocs and imports
 
 		// A missing relocation directory is OK, but disallow IMAGE_FILE_RELOCS_STRIPPED
@@ -149,4 +153,43 @@ bool kdmapper::ResolveImports(HANDLE iqvw64e_device_handle, const portable_execu
 	}
 
 	return true;
+}
+
+void kdmapper::InitStackCookie(void* base)
+{
+	const PIMAGE_NT_HEADERS64 nt_headers = RtlImageNtHeader(base);
+	ULONG config_dir_size = 0;
+	const PIMAGE_LOAD_CONFIG_DIRECTORY64 config_dir = static_cast<PIMAGE_LOAD_CONFIG_DIRECTORY64>(
+		RtlImageDirectoryEntryToData(base,
+									TRUE,
+									IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG,
+									&config_dir_size));
+	if (config_dir == nullptr || config_dir_size == 0)
+		return;
+	
+	uint64_t cookie_va;
+	if ((cookie_va = static_cast<uint64_t>(config_dir->SecurityCookie)) == 0)
+		return;
+	cookie_va = cookie_va - nt_headers->OptionalHeader.ImageBase + reinterpret_cast<uint64_t>(base);
+
+	uint64_t cookie = SharedUserData->SystemTime.LowPart ^ cookie_va;
+	cookie &= 0x0000FFFFFFFFFFFFi64;
+
+	constexpr uint64_t default_security_cookie64 = 0x00002B992DDFA232ULL;
+	if (static_cast<uint64_t>(cookie) == default_security_cookie64)
+		cookie++;
+
+	// Guess the address of the complement (normally correct for MSVC-compiled binaries)
+	uint64_t cookie_complement_va = cookie_va + sizeof(uint64_t);
+	if (*reinterpret_cast<uint64_t*>(cookie_complement_va) != ~default_security_cookie64)
+	{
+		// Nope; try before the cookie instead
+		cookie_complement_va = cookie_va - sizeof(uint64_t);
+		if (*reinterpret_cast<uint64_t*>(cookie_complement_va) != ~default_security_cookie64)
+			cookie_complement_va = 0;
+	}
+
+	*reinterpret_cast<uint64_t*>(cookie_va) = cookie;
+	if (cookie_complement_va != 0)
+		*reinterpret_cast<uint64_t*>(cookie_complement_va) = ~cookie;
 }
