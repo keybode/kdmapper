@@ -17,6 +17,8 @@ portable_executable::vec_relocs portable_executable::GetRelocs(void* image_base)
 	vec_relocs relocs;
 
 	auto current_base_relocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<uint64_t>(image_base) + nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+	if((char*)current_base_relocation == (char*)image_base)
+		return relocs;
 	const auto reloc_end = reinterpret_cast<uint64_t>(current_base_relocation) + nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
 
 	while (current_base_relocation->VirtualAddress && current_base_relocation->VirtualAddress < reloc_end && current_base_relocation->SizeOfBlock)
